@@ -38,6 +38,6 @@
   "devDependencies": {
     "supertest": "^0.15.0",
     "should": "^4.3.0",
-    "basyt-mongodb-collection": "git://github.com/ytlabs/basyt-mongodb-collection.git"
+    "basyt-mongodb-collection": "^0.2.0"
   }
 }
