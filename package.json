@@ -1,0 +1,43 @@
+{
+  "name": "basyt",
+  "version": "0.2.0",
+  "description": "lightweight json API server implementation based on expressjs",
+  "keywords": [
+    "json api",
+    "api server",
+    "web server",
+    "framework",
+    "application framework"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "homepage": "https://github.com/ytlabs/basyt",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ytlabs/basyt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ytlabs/basyt/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Kamil Sulubulut",
+    "url": "http://github.com/kokeksibir/"
+  },
+  "dependencies": {
+    "bcrypt": "^0.8.0",
+    "body-parser": "^1.9.2",
+    "express": "^4.10.2",
+    "jsonwebtoken": "^1.1.2",
+    "lodash": "^2.4.1",
+    "socket.io": "^1.2.0",
+    "socketio-jwt": "^2.3.5"
+  },
+  "devDependencies": {
+    "supertest": "^0.15.0",
+    "should": "^4.3.0",
+    "basyt-mongodb-collection": "git://github.com/ytlabs/basyt-mongodb-collection.git"
+  }
+}
