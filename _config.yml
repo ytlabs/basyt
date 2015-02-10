@@ -1,0 +1,48 @@
+url: http://ytlabs.github.io/
+baseurl: /basyt
+
+# Site settings
+title: basyt
+email: basyt@yt.com.tr
+description: "minimalist nodejs package to create JSON API server."
+
+# Color settings (hex-codes without the leading hash-tag)
+color:
+  primary: fed136
+  secondary: fec503  
+  secondary-dark: 333
+
+# Team names, titles and social links
+people:
+- name: Kamil Sulubulut
+  pic: 1
+  position: Lead Designer
+  social:
+    - title: twitter
+      url: http://twitter.com/kokeksibir
+    - title: github
+      url: http://github.com/kokeksibir
+    - title: stack-overflow
+      url: http://stackoverflow.com/users/65071/kokeksibir
+
+# Social networks usernames (many more available: google-plus, flickr, dribbble, pinterest, instagram, tumblr, linkedin, etc.)
+social:
+  - title: twitter
+    url: http://twitter.com/yonca_teknoloji
+  - title: facebook
+    url: http://facebook.com/yoncateknoloji
+  - title: github
+    url: http://github.com/ytlabs
+  - title: linkedin
+    url: http://www.linkedin.com/company/yonca-teknoloji
+
+# Postal address (add as many lines as necessary)
+address:
+  - line: Yonca Teknoloji
+  - line: Ankara Universitesi TGB
+  - line: Kat 1 No 3, 06830 Golbasi
+  - line: Ankara, TURKEY
+
+# Build settings
+markdown: kramdown
+permalink: pretty

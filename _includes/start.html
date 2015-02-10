@@ -1,0 +1,162 @@
+<!-- Quick Start Section -->
+    <section id="start">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2 class="section-heading">Quick Start</h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-8 col-md-offset-2">
+                    <p>To utilize basyt as foundation of your API, you need several declarations. Firstly basyt needs global APP_CONFIG object.</p>
+
+                    <div class="highlight highlight-js">
+<pre>GLOBAL.APP_CONFIG <span class="k">=</span> {
+    base_folder<span class="k">:</span> <span class="sv">__dirname</span> <span class="k">+</span> <span class="s1"><span class="pds">'</span>/<span class="pds">'</span></span>, 
+    <span class="c">//base_folder definition is required, you probably will keep this line as it is</span>
+
+    package_file<span class="k">:</span> GLOBAL.APP_CONFIG.base_folder <span class="k">+</span> <span class="s1"><span class="pds">'</span>package.json<span class="pds">'</span></span>, 
+    <span class="c">//path for package.json file. basyt uses package.json to get application name and version.</span>
+    <span class="c">//when not defined package_file is set to base_folder + 'package.json'</span>
+
+    basyt<span class="k">:</span> { <span class="c">//scope for basyt related configuration</span>
+        port<span class="k">:</span> <span class="c1">5850</span>, 
+        <span class="c">//port number that basyt HTTP server will listen</span>
+        entity_path<span class="k">:</span> <span class="s1"><span class="pds">'</span>/<span class="pds">'</span></span>,
+        <span class="c">//url base path for entity API endpoints. default is '/'</span>
+        <span class="c">//if it is set to 'foo' then base address for entity is http://hostname/foo/entity</span>
+        entities_folder<span class="k">:</span> GLOBAL.APP_CONFIG.base_folder <span class="k">+</span> <span class="s1"><span class="pds">'</span>entities<span class="pds">'</span></span>,
+        <span class="c">//path for folder that contains entity definitions.</span>
+        <span class="c">//when not defined, entities_folder is set to base_folder + 'entities'</span>
+        controllers_folder<span class="k">:</span> GLOBAL.APP_CONFIG.base_folder <span class="k">+</span> <span class="s1"><span class="pds">'</span>controllers<span class="pds">'</span></span>,
+        <span class="c">//path for folder that contains entity-free controller definitions.</span>
+        <span class="c">//when not defined, controllers_folder is set to base_folder + 'controllers'</span>
+        enable_ws<span class="k">:</span> <span class="c1">true</span>,
+        <span class="c">//enables socket.io based websocket. default true</span>
+        enable_cors<span class="k">:</span> <span class="c1">true</span>, 
+        <span class="c">//enables CORS setup. default false</span>
+        enable_auth<span class="k">:</span> <span class="c1">true</span>,
+        <span class="c">//enables user management and authentication. default true</span>
+        cors<span class="k">:</span> { 
+          <span class="c">//CORS headers to be setup. Required only when enable_cors is true</span>
+          <span class="c">//following values can be set for CORS setup.</span>
+          <span class="c">//Content_Type header field is allowed by default</span>
+          <span class="c">//Authorization header is allowed when auth is enabled</span>
+            origin<span class="k">:</span> <span class="s1"><span class="pds">'</span>http://localhost:8580<span class="pds">'</span></span>,
+            methods<span class="k">:</span> <span class="s1"><span class="pds">'</span>GET,PUT,POST,DELETE<span class="pds">'</span></span>,
+            headers<span class="k">:</span> [<span class="s1"><span class="pds">'</span>accept<span class="pds">'</span></span>]
+        },
+        auth<span class="k">:</span> {
+          <span class="c">//required when enable_auth is true.</span>
+            token<span class="k">:</span> <span class="s1"><span class="pds">'</span>your.secret.token<span class="pds">'</span></span>,
+            <span class="c">//token to be used for jwt</span>
+            method<span class="k">:</span> <span class="s1"><span class="pds">'</span>jwt<span class="pds">'</span></span>
+            <span class="c">//currently only supported method is jwt</span>
+        }
+        disable_discovery<span class="k">:</span> <span class="c1">false</span>, 
+        <span class="c">//when discovery is enabled, GET request to server's base address will provide all possible API</span>
+    },
+    mongodb<span class="k">:</span> { <span class="c">//scope for mongodb collection configuration</span>
+        connection<span class="k">:</span> <span class="s1"><span class="pds">'</span>mongodb://localhost/basyt_db<span class="pds">'</span></span>
+    }
+};</pre></div>
+
+                    <p>after declaring global APP_CONFIG, you simply instantiate basyt</p>
+
+                    <div class="highlight highlight-js">
+<pre><span class="s">var</span> basyt <span class="k">=</span> <span class="s3">require</span>(<span class="s1"><span class="pds">'</span>basyt<span class="pds">'</span></span>);
+<span class="s">var</span> basytApp <span class="k">=</span> basyt();</pre></div>
+
+                    <p>basyt explores entities and controllers in corresponding folders and generates API endpoints. In entities folder, entity declarations are like in the following example</p>
+
+                    <div class="highlight highlight-js">
+<pre><span class="sv">module</span>.exports <span class="k">=</span> {
+    collection<span class="k">:</span> { <span class="c">//collection is database aspect of entity</span>
+        storage<span class="k">:</span> <span class="s1"><span class="pds">"</span>mongodb<span class="pds">"</span></span>,
+        <span class="c">//currently the only storage option is mongodb. it is used to select collection</span>
+        name<span class="k">:</span> <span class="s1"><span class="pds">"</span>test_entity<span class="pds">"</span></span>,
+        <span class="c">//name of entity, used for url path and as collection name</span>
+        strict<span class="k">:</span> <span class="c1">true</span>,
+        <span class="c">//when collection is NOT strict, it accepts attributes that are not defined in attributes list</span>
+        attributes<span class="k">:</span> { <span class="c">//list of the attributes of entity</span>
+            <span class="c">//following attributes are given as example</span>
+            name<span class="k">:</span> {type<span class="k">:</span> <span class="s1"><span class="pds">"</span>string<span class="pds">"</span></span>, required<span class="k">:</span> <span class="c1">true</span>},
+            email<span class="k">:</span> <span class="s1"><span class="pds">"</span>email<span class="pds">"</span></span>,
+            url<span class="k">:</span> <span class="s1"><span class="pds">"</span>url<span class="pds">"</span></span>,
+            telephone<span class="k">:</span> {
+                type<span class="k">:</span> <span class="s1"><span class="pds">"</span>numeric<span class="pds">"</span></span>,
+                minLength<span class="k">:</span> <span class="c1">7</span>,
+                maxLength<span class="k">:</span> <span class="c1">11</span>
+            }
+        },
+        event_names<span class="k">:</span> [<span class="s1"><span class="pds">'</span>{{obj.email}}:test_entity<span class="pds">'</span></span>],
+        <span class="c">//basyt emits redis event for entity updates. </span>
+        <span class="c">//By default, it emits entity:{{entity name}}:{{object id}} event</span>
+        <span class="c">//for additional events event_names list is used.</span>
+        methods<span class="k">:</span> {
+          <span class="c">//list of collection methods</span>
+          <span class="c">//here hook functions for entity can be defined. for instance beforeCreate, afterCreate etc.</span>
+          <span class="c">//see basyt-base-collection/index.js hook functions for complete hook functions and their</span>
+          <span class="c">//signature</span>
+        }
+    },
+    auth_levels<span class="k">:</span> {
+      <span class="c">//authentication levels for API actions for entity. Default authentication level is 'USER'</span>
+      <span class="s1"><span class="pds">'</span>read<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>list<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>update<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>update_bulk<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>query<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>create<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>create_bulk<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>delete<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+      <span class="s1"><span class="pds">'</span>delete_bulk<span class="pds">'</span></span><span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>
+    },
+    <span class="c">//you can disable/enable any API action for entity.</span>
+    disable_read<span class="k">:</span> <span class="c1">false</span>,
+    disable_list<span class="k">:</span> <span class="c1">false</span>,
+    disable_update<span class="k">:</span> <span class="c1">false</span>,
+    disable_delete_bulk<span class="k">:</span> <span class="c1">true</span>,
+    disable_create_bulk<span class="k">:</span> <span class="c1">true</span>,
+    disable_update_bulk<span class="k">:</span> <span class="c1">true</span>,
+    customActions<span class="k">:</span> {
+      <span class="c">//here you can define any other actions for the entity</span>
+      test<span class="k">:</span> {
+        path<span class="k">:</span> <span class="s1"><span class="pds">'</span>/:entity_id/test<span class="pds">'</span></span>,
+        <span class="c">//url path that action will bind to</span>
+        method<span class="k">:</span> <span class="s1"><span class="pds">'</span>put<span class="pds">'</span></span>,
+        <span class="c">//HTTP method for the action</span>
+        auth_level<span class="k">:</span> <span class="s1"><span class="pds">'</span>ADMIN<span class="pds">'</span></span>,
+        <span class="c">//Authentication level for the action</span>
+        action<span class="k">:</span> <span class="st">function</span> <span class="en">custom_action</span>(<span class="vpf">req</span>, <span class="vpf">res</span>) {
+          <span class="c">//action function</span>
+          <span class="k">return</span> res.json({success<span class="k">:</span> <span class="c1">true</span>});
+        }
+      }
+    }
+};</pre></div>
+
+                    <p>In controllers folder, entity-free controllers are declared. Those controller files include definitions similar to customActions field of entity declarations.</p>
+
+                    <div class="highlight highlight-js">
+<pre><span class="sv">module</span>.exports <span class="k">=</span> {
+  example_action<span class="k">:</span> {
+  path<span class="k">:</span> <span class="s1"><span class="pds">'</span>/example_action<span class="pds">'</span></span>,
+  <span class="c">//url path that action will bind to</span>
+  method<span class="k">:</span> <span class="s1"><span class="pds">'</span>GET<span class="pds">'</span></span>,
+  <span class="c">//HTTP method for the action</span>
+  auth_level<span class="k">:</span> <span class="s1"><span class="pds">'</span>USER<span class="pds">'</span></span>,
+  <span class="c">//Authentication level for the action</span>
+  action<span class="k">:</span> <span class="st">function</span> <span class="en">example_action</span>(<span class="vpf">req</span>, <span class="vpf">res</span>) {
+    <span class="c">//action function</span>
+    <span class="k">return</span> res.json({success<span class="k">:</span> <span class="c1">true</span>});
+  }
+}
+};</pre></div>
+
+                    <p>For a controller file named <code>test_controller.js</code> with content given above, there will be an api for address <code>http://hostname/test_controller/example_action</code>.</p>
+                </div>
+            </div>
+            
+        </div>
+    </section>

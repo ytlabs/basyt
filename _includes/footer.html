@@ -1,0 +1,17 @@
+  <footer  class="bg-light-gray">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 text-left text-muted">
+                    <span class="copyright">basyt is a MIT licensed project by <a href="http://yoncateknoloji.com.tr">Yonca Teknoloji</a>, 2015</span>
+                </div>
+                <div class="col-md-4">
+                    <ul class="list-inline social-buttons">
+                        {% for network in site.social %}
+                        <li><a href="{{ network.url }}"><i class="fa fa-{{ network.title }}"></i></a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
