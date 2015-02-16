@@ -1,7 +1,7 @@
 {
   "name": "basyt",
-  "version": "0.2.0",
-  "description": "lightweight json API server implementation based on expressjs",
+  "version": "0.2.1",
+  "description": "minimalist nodejs package to create JSON API server.",
   "keywords": [
     "json api",
     "api server",
@@ -38,6 +38,6 @@
   "devDependencies": {
     "supertest": "^0.15.0",
     "should": "^4.3.0",
-    "basyt-mongodb-collection": "^0.2.0"
+    "basyt-mongodb-collection": "^0.2.1"
   }
 }
