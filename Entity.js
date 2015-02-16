@@ -124,6 +124,8 @@ function Entity(fileName, config_path) {
             next();
         };
 
+    process.basyt.collections[entityConfig.collection.name] = entityCollection;
+
     entityConfig.auth_levels = _.extend({}, {
         'read': 'USER',
         'list': 'USER',

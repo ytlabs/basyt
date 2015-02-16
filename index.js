@@ -79,12 +79,10 @@ function Basyt() {
         userEntity = new Entity('user', require.resolve('./user'));
         this.app.use((config.basyt.entity_path || '/') + 'user', userEntity.router);
         entityRoutings.push(userEntity.routing);
-        process.basyt.collections.user = userEntity.collection;
 
         userSettingsEntity = new Entity('user_settings', require.resolve('./user_settings'));
         this.app.use((config.basyt.entity_path || '/') + 'user_settings', userSettingsEntity.router);
         entityRoutings.push(userSettingsEntity.routing);
-        process.basyt.collections.user_settings = userSettingsEntity.collection;
 
         if (config.basyt.enable_ws !== false) {
             //setup jwt auth for socket
@@ -105,7 +103,6 @@ function Basyt() {
             console.log("\t" + (index + 1) + ". " + entityName);
             this.app.use((config.basyt.entity_path || '/') + entityName, entityInstance.router);
             entityRoutings.push(entityInstance.routing);
-            process.basyt.collections[entityName] = entityInstance.collection;
         }, this);
     }
 
