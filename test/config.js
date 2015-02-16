@@ -18,9 +18,7 @@ GLOBAL.APP_CONFIG = {
             token: 'very.secre!,t0k3n'
         }
     },
-    mongodb: {
-        connection: 'mongodb://localhost/basyt_db'
-    }
+    mongodb: "basyt_testdb"
 };
 
 module.exports = GLOBAL.APP_CONFIG;

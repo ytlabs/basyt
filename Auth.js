@@ -33,8 +33,8 @@ var Auth = {
             } else {
                 return false;
             }
-        } else if (req.param('token')) {
-            token = req.param('token');
+        } else if (req.query.token) {
+            token = req.query.token;
             delete req.query.token;
         } else {
             return false;

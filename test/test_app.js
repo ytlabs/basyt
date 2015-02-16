@@ -2,7 +2,7 @@ var basyt = require("../"),
     request = require('supertest'),
     basytApp,
     should = require("should"),
-    user, rel,
+    user, rel, admin,
     token;
 
 describe('Launch Basyt Test App', function () {
@@ -160,19 +160,27 @@ describe('User Login', function () {
                 done();
             });
     });
+    it('Reject invalid user', function (done) {
+        request(basytApp.app)
+            .post('/user/login')
+            .send({email: 'kamil+unregistered@yt.com.tr', password: '123223'})
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(404)
+            .end(function (err, res) {
+                should(res.body.success).be.exactly(false);
+                done();
+            });
+    });
     it('Reject invalid password', function (done) {
         request(basytApp.app)
             .post('/user/login')
             .send({email: 'kamil+basyt@yt.com.tr', password: '123465'})
             .set('Accept', 'application/json')
             .expect('Content-Type', /json/)
-            .expect(200)
+            .expect(404)
             .end(function (err, res) {
-                should(err).be.exactly(null);
                 should(res.body.success).be.exactly(false);
-                should(res.body).have.property('err');
-                should(res.body.err[0][0]).be.exactly('password');
-                should(res.body.err[0][1]).be.exactly('invalid_user_password');
                 done();
             });
     });
@@ -237,6 +245,47 @@ describe('User Login', function () {
                 should(err).be.exactly(null);
                 should(res.body.success).be.exactly(true);
                 should(res.body).have.property('result');
+                done();
+            });
+    });
+});
+
+describe('Authorization tests', function(){
+    it('Accept token with url params', function(done){
+        request(basytApp.app)
+            .get('/user/' + user.id)
+            .query({token: token})
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body).have.property('result');
+                done();
+            });
+    });
+    it('Try wrong token', function (done) {
+        request(basytApp.app)
+            .get('/user/' + user.id)
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + "some mischievous token trial")
+            .expect('Content-Type', /json/)
+            .expect(401)
+            .end(function (err, res) {
+                done();
+            });
+    });
+    it('Test controller action', function (done) {
+        request(basytApp.app)
+            .get('/test_controller/action')
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
                 done();
             });
     });
@@ -404,7 +453,6 @@ describe('Test test_entity API', function () {
                 should(err).be.exactly(null);
                 should(res.body.success).be.exactly(true);
                 should(res.body).have.property('result');
-                console.log(res.body.result);
                 should(res.body.result).have.property('related');
                 done();
             });
@@ -469,5 +517,197 @@ describe('Test test_entity API', function () {
                 done();
             });
     });
+});
+
+describe('User update, settings', function(){
+    it('Register a new plain user', function (done) {
+        request(basytApp.app)
+            .post('/user/register')
+            .send({entity: {name: "plain user", password: "paradiso", email: "kamil+plain@basyt.ytlabs.com"}})
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.result.email).be.exactly('kamil+plain@basyt.ytlabs.com');
+                should(res.body.result).have.property('token');
+                done();
+            });
+    });
+    it('Login with plain user', function (done) {
+        request(basytApp.app)
+            .post('/user/login')
+            .send({email: 'kamil+plain@basyt.ytlabs.com', password: 'paradiso'})
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.result.email).be.exactly('kamil+plain@basyt.ytlabs.com');
+                should(res.body.result).have.property('id');
+                should(res.body.result).have.property('token');
+                token = res.body.result.token;
+                admin = user;
+                user = res.body.result;
+                done();
+            });
+    });
+
+    it('Get profile', function (done) {
+        request(basytApp.app)
+            .get('/user/'+admin.id) //even admin is requested user's own info will be shown
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.result.id).be.exactly(user.id)
+                done();
+            });
+    });
+
+    it('Update profile', function (done) {
+        request(basytApp.app)
+            .put('/user/'+user.id)
+            .send({update: {$set: {name: 'plain user updated'}}})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                done();
+            });
+    });
+
+    it('set field on user setting', function (done){
+        request(basytApp.app)
+            .put('/user_settings/set/field')
+            .send({value: "test"})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                request(basytApp.app)
+                    .get('/user_settings')
+                    .set('Accept', 'application/json')
+                    .set('Authorization', 'Bearer ' + token)
+                    .expect('Content-Type', /json/)
+                    .expect(200)
+                    .end(function (err, res) {
+                        should(err).be.exactly(null);
+                        should(res.body.success).be.exactly(true);
+                        should(res.body).have.property('result');
+                        should(res.body.result).have.property('field');
+                        should(res.body.result.field).be.exactly("test");
+                        done();
+                    });
+            });
+    });
+
+    it('unset field on user setting', function (done){
+        request(basytApp.app)
+            .delete('/user_settings/unset/field')
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                done();
+            });
+    });
+
+    it('push to array field on user setting', function (done){
+        request(basytApp.app)
+            .put('/user_settings/push/array_field')
+            .send({value: "item"})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                request(basytApp.app)
+                    .get('/user_settings')
+                    .set('Accept', 'application/json')
+                    .set('Authorization', 'Bearer ' + token)
+                    .expect('Content-Type', /json/)
+                    .expect(200)
+                    .end(function (err, res) {
+                        should(err).be.exactly(null);
+                        should(res.body.success).be.exactly(true);
+                        should(res.body.result).not.have.property('field');
+                        should(res.body.result).have.property('array_field');
+                        should(res.body.result.array_field[0]).be.exactly("item");
+                        done();
+                    });
+            });
+    });
+
+    it('push another value to array field on user setting', function (done){
+        request(basytApp.app)
+            .put('/user_settings/push/array_field')
+            .send({value: "second item"})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                request(basytApp.app)
+                    .get('/user_settings')
+                    .set('Accept', 'application/json')
+                    .set('Authorization', 'Bearer ' + token)
+                    .expect('Content-Type', /json/)
+                    .expect(200)
+                    .end(function (err, res) {
+                        should(err).be.exactly(null);
+                        should(res.body.success).be.exactly(true);
+                        should(res.body.result).have.property('array_field');
+                        should(res.body.result.array_field).have.length(2);
+                        done();
+                    });
+            });
+    });
+
+    it('pull value from array field on user setting', function (done){
+        request(basytApp.app)
+            .put('/user_settings/pull/array_field')
+            .send({value: "item"})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                request(basytApp.app)
+                    .get('/user_settings')
+                    .set('Accept', 'application/json')
+                    .set('Authorization', 'Bearer ' + token)
+                    .expect('Content-Type', /json/)
+                    .expect(200)
+                    .end(function (err, res) {
+                        should(err).be.exactly(null);
+                        should(res.body.success).be.exactly(true);
+                        should(res.body.result).have.property('array_field');
+                        should(res.body.result.array_field).have.length(1);
+                        should(res.body.result.array_field[0]).be.exactly("second item");
+                        done();
+                    });
+            });
+    });
+
+
 });
 
