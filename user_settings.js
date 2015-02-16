@@ -4,6 +4,7 @@ var _ = require('lodash'),
 module.exports = {
     collection: {
         name: "user_settings",
+        strict: false,
         attributes: {
             user: {
                 type: "relation",
@@ -24,11 +25,6 @@ module.exports = {
     interceptors: {
         all: function (req, res, next) {
             req.entity_query.user = req.auth_user.id;
-            next();
-        },
-        update: function (req, res, next) {
-            req.entity_query_options.upsert = true;
-            req.body.update.$setOnInsert = req.entity_query;
             next();
         }
     },
@@ -52,7 +48,7 @@ module.exports = {
             action: function (req, res) {
                 var update = {$setOnInsert: req.entity_query, $set: {}};
                 update.$set[req.params.field] = req.body.value;
-                return req.collection.update(req.entity_query, update, {upsert: true, multi: true})
+                return req.collection.update(req.entity_query, update, {upsert: true})
                     .then(function () {
                         return res.json({success: true});
                     })
@@ -66,7 +62,7 @@ module.exports = {
             action: function (req, res) {
                 var unset = {};
                 unset[req.params.field] = "";
-                return req.collection.update(req.entity_query, {$unset: unset}, {multi: true})
+                return req.collection.update(req.entity_query, {$unset: unset})
                     .then(function () {
                         return res.json({success: true});
                     })
@@ -80,7 +76,7 @@ module.exports = {
             action: function (req, res) {
                 var update = {$setOnInsert: req.entity_query, $push: {}};
                 update.$push[req.params.field] = req.body.value;
-                return req.collection.update(req.entity_query, update, {upsert: true, multi: true})
+                return req.collection.update(req.entity_query, update, {upsert: true})
                     .then(function () {
                         return res.json({success: true});
                     })
@@ -89,12 +85,12 @@ module.exports = {
         },
         pull: {
             path: '/pull/:field',
-            method: 'delete',
+            method: 'put',
             auth_level: 'USER',
             action: function (req, res) {
-                var pull = {};
-                pull[req.params.field] = "";
-                return req.collection.update(req.entity_query, {$pull: pull}, {multi: true})
+                var update = {$setOnInsert: req.entity_query, $pull: {}};
+                update.$pull[req.params.field] = req.body.value;
+                return req.collection.update(req.entity_query, update)
                     .then(function () {
                         return res.json({success: true});
                     })

@@ -18,16 +18,13 @@ var customActions = {
             delete projection.roles;
             return req.collection.read({email: req.body.email}, {depth: 2, projection: projection})
                 .then(function (entity) {
-                    if (!_.isObject(entity)) {
-                        throw new Errors.InputError([['password', 'invalid_user_password']]);
-                    }
                     if (req.collection.verifyPassword(req.body.password, entity.password)) {
                         delete entity.password;
                         delete entity.created_at;
                         entity.token = Auth.issueToken(entity);
                     }
                     else {
-                        throw new Errors.InputError([['password', 'invalid_user_password']]);
+                        throw new process.basyt.ErrorDefinitions.BasytError({message: 'Not Found'}, 404);
                     }
                     return res.json({success: true, result: entity});
                 })
@@ -45,6 +42,7 @@ if (Config.disable_register !== true) {
     customActions.register = {
         path: '/register',
         method: 'post',
+        auth_level: 'ANON',
         action: function UserRegister(req, res, next) {
             var user = req.body.entity,
                 activation_code,
@@ -133,6 +131,10 @@ module.exports = {
                     return new Date();
                 },
                 readable: false
+            },
+            activation_code: {
+                type: "string",
+                readable: false
             }
         }, Config.userExtraFields),
 
@@ -149,7 +151,7 @@ module.exports = {
             },
             afterCreate: function user_entity_after_create(model, entity) {
                 var settings = process.basyt.collections['user_settings'];
-                return settings.create({user: model.id}).then(function () {
+                return settings.create({user: model.id.toString()}).then(function () {
                     return model;
                 });
             },
@@ -187,13 +189,13 @@ module.exports = {
     interceptors: _.extend({}, {
         read: function user_entity_read_interceptor(req, res, next) {
             if (!req.isADMIN && !req.isLORD) {
-                req.entity_query[req.collection.idField] = req.auth_user[req.collection.idField];
+                req.entity_query[req.collection.idField] = req.auth_user.id;
             }
             next();
         },
         update: function user_entity_update_interceptor(req, res, next) {
             if (!req.isADMIN && !req.isLORD) {
-                req.entity_query[req.collection.idField] = req.auth_user[req.collection.idField];
+                req.entity_query[req.collection.idField] = req.auth_user.id;
             }
             next();
         }
