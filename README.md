@@ -1,6 +1,11 @@
 # basyt
 minimalist package to create JSON API server. Typical scenario to use basyt is when you need a rest-like JSON API that provides create/read/update/delete/query actions for your data entities.
 
+[![npm version](https://badge.fury.io/js/basyt.svg)](http://badge.fury.io/js/basyt)
+[![Build Status](https://travis-ci.org/ytlabs/basyt.svg)](http://travis-ci.org/ytlabs/basyt)
+[![Dependencies](https://david-dm.org/ytlabs/basyt.svg)](https://david-dm.org/ytlabs/basyt)
+[![Coverage Status](https://coveralls.io/repos/ytlabs/basyt/badge.svg?branch=master)](https://coveralls.io/r/ytlabs/basyt?branch=master)
+
 ## Installation
 
 ```bash
