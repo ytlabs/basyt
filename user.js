@@ -174,7 +174,8 @@ module.exports = {
             createRandomCode: function user_entity_create_random_code(length) {
                 return bcrypt.genSaltSync(length);
             }
-        }
+        },
+        eventNames: Config.userEventNames
     },
 
     auth_levels: _.extend({}, {
