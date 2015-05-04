@@ -296,7 +296,7 @@ describe('Test test_entity API', function () {
     it('Create new test_entity', function (done) {
         request(basytApp.app)
             .post('/test_entity')
-            .send({entity: {name: 'test1', email: 'a@b.c', url: 'http://ab.cd.com', telephone: '1234567890'}})
+            .send({entity: {name: 'test1', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890'}})
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
@@ -327,7 +327,7 @@ describe('Test test_entity API', function () {
     it('Create new test_entity', function (done) {
         request(basytApp.app)
             .post('/test_entity')
-            .send({entity: {name: 'test2', email: 'a@b.c', url: 'http://ab.cd.com', telephone: '1234567890'}})
+            .send({entity: {name: 'test2', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890'}})
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
@@ -352,6 +352,23 @@ describe('Test test_entity API', function () {
                 should(res.body.success).be.exactly(true);
                 should(res.body).have.property('result');
                 should(res.body.result.length).be.exactly(2);
+                done();
+            });
+    });
+
+    it('Count test_entity', function (done) {
+        request(basytApp.app)
+            .get('/test_entity/count')
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);                
+                console.log(res.body);
+                should(res.body.success).be.exactly(true);
+                should(res.body).have.property('total');
+                should(res.body.total).be.exactly(2);
                 done();
             });
     });

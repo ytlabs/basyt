@@ -86,6 +86,13 @@ var restActions = {
                     return res.json({success: true});
                 })
                 .catch(Errors.stdCatchFunction(res));
+        },
+        'count': function (req, res) {
+            return req.collection.count(req.body.query)
+                .then(function (count) {
+                    return res.json({success: true, result: {}, total: count})
+                })
+                .catch(Errors.stdCatchFunction(res));
         }
     },
     entitySchemes = {
@@ -93,9 +100,10 @@ var restActions = {
         'create': {path: '/', method: 'post', action: restActions.post},
         'update_bulk': {path: '/', method: 'put', action: restActions.put},
         'delete_bulk': {path: '/', method: 'delete', action: restActions.delete},
+        'count': {path:'/count', method: 'put', action: restActions.count},
         'list': {path: '/list', method: 'get', action: restActions.get},
-        'query': {path: '/list', method: 'put', action: restActions.put},
-        'create_bulk': {path: '/list', method: 'post', action: restActions.post},
+        'query': {path: '/list', method: 'put', action: restActions.put},        
+        'create_bulk': {path: '/list', method: 'post', action: restActions.post},                
         'read': {path: '/:entity_id', method: 'get', action: restActions.get},
         'update': {path: '/:entity_id', method: 'put', action: restActions.put},
         'delete': {path: '/:entity_id', method: 'delete', action: restActions.delete}
@@ -129,6 +137,7 @@ function Entity(fileName, config_path) {
     entityConfig.auth_levels = _.extend({}, {
         'read': 'USER',
         'list': 'USER',
+        'count': 'USER',
         'update': 'USER',
         'update_bulk': 'USER',
         'query': 'USER',
@@ -144,7 +153,7 @@ function Entity(fileName, config_path) {
     if (_.isUndefined(entityConfig.disable_create_bulk)) entityConfig.disable_create_bulk = true;
 
     router.param('entity_id', function (req, res, next, entity_id) {
-        if (entity_id === 'list') {
+        if (entity_id === 'list' || entity_id === 'count') {
             req.entity_query = {};
             req.isQuery = true;
         }
