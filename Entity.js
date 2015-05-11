@@ -30,11 +30,12 @@ var restActions = {
                 query = req.collection.update(req.entity_query, req.body.update);
             }
             else {
+                var entity_query = _.extend({}, req.body.query, req.entity_query);
                 if (req.params.entity_id !== 'list' && !_.isUndefined(req.body.update)) {
-                    query = req.collection.update(req.body.query, req.body.update);
+                    query = req.collection.update(entity_query, req.body.update);
                 }
                 else {
-                    query = req.collection.query(req.body.query, req.body.query_options || req.entity_query_options);
+                    query = req.collection.query(entity_query, req.body.query_options || req.entity_query_options);
                 }
             }
             return query
@@ -88,7 +89,8 @@ var restActions = {
                 .catch(Errors.stdCatchFunction(res));
         },
         'count': function (req, res) {
-            return req.collection.count(req.body.query)
+            var entity_query = _.extend({}, req.body.query, req.entity_query);
+            return req.collection.count(entity_query)
                 .then(function (count) {
                     return res.json({success: true, result: {}, total: count})
                 })
