@@ -27,15 +27,16 @@ var restActions = {
         'put': function (req, res) {
             var query;
             if (req.isQuery === false) {
-                query = req.collection.update(req.entity_query, req.body.update);
+                query = req.collection.update(req.entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));
             }
             else {
                 var entity_query = _.extend({}, req.body.query, req.entity_query);
+                console.log(entity_query);
                 if (req.params.entity_id !== 'list' && !_.isUndefined(req.body.update)) {
-                    query = req.collection.update(entity_query, req.body.update);
+                    query = req.collection.update(entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));
                 }
                 else {
-                    query = req.collection.query(entity_query, req.body.query_options || req.entity_query_options);
+                    query = req.collection.query(entity_query, _.extend({}, req.body.query_options, req.entity_query_options));
                 }
             }
             return query
