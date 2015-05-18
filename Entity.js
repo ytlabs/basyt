@@ -31,8 +31,10 @@ var restActions = {
             }
             else {
                 var entity_query = _.extend({}, req.body.query, req.entity_query);
-                console.log(entity_query);
-                if (req.params.entity_id !== 'list' && !_.isUndefined(req.body.update)) {
+                if(req.action_name === 'search' && _.isString(req.query.q)) {
+                    entity_query.$text = {$search: req.query.q};
+                }
+                if (req.action_name === 'update_bulk' && !_.isUndefined(req.body.update)) {
                     query = req.collection.update(entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));
                 }
                 else {
@@ -105,7 +107,8 @@ var restActions = {
         'delete_bulk': {path: '/', method: 'delete', action: restActions.delete},
         'count': {path:'/count', method: 'put', action: restActions.count},
         'list': {path: '/list', method: 'get', action: restActions.get},
-        'query': {path: '/list', method: 'put', action: restActions.put},        
+        'query': {path: '/list', method: 'put', action: restActions.put},
+        'search': {path: '/search', method: 'put', action: restActions.put},
         'create_bulk': {path: '/list', method: 'post', action: restActions.post},                
         'read': {path: '/:entity_id', method: 'get', action: restActions.get},
         'update': {path: '/:entity_id', method: 'put', action: restActions.put},
@@ -141,6 +144,7 @@ function Entity(fileName, config_path) {
         'read': 'USER',
         'list': 'USER',
         'count': 'USER',
+        'search': 'USER',
         'update': 'USER',
         'update_bulk': 'USER',
         'query': 'USER',
@@ -174,6 +178,10 @@ function Entity(fileName, config_path) {
             router[action.method](action.path, Auth.getAuthInterceptor(action.auth_level));
         }
         //prepare query params
+        router[action.method](action.path, function(req,res,next){
+            req.action_name = action_name;
+            next();
+        });
         router[action.method](action.path, queryOptionsInterceptor);
 
         //install custom interceptors
@@ -218,6 +226,10 @@ function Entity(fileName, config_path) {
             }
 
             //prepare query params
+            router[scheme.method](scheme.path, function(req,res,next){
+                req.action_name = schemeName;
+                next();
+            });
             router[scheme.method](scheme.path, queryOptionsInterceptor);
 
             //install custom interceptors
