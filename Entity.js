@@ -32,7 +32,7 @@ var restActions = {
             else {
                 var entity_query = _.extend({}, req.body.query, req.entity_query);
                 if(req.action_name === 'search' && _.isString(req.query.q)) {
-                    entity_query.$text = {$search: req.query.q};
+                    req.entity_query_options.search_text = req.query.q;
                 }
                 if (req.action_name === 'update_bulk' && !_.isUndefined(req.body.update)) {
                     query = req.collection.update(entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));

@@ -7,7 +7,8 @@ module.exports = {
                 type: 'id',
                 entity: 'test_entity',
                 role: 'related',
-                foreign: '_id'
+                foreign: '_id',
+                transfer: {'related_name': 'name'}
             }
         }
     },

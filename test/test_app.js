@@ -296,7 +296,7 @@ describe('Test test_entity API', function () {
     it('Create new test_entity', function (done) {
         request(basytApp.app)
             .post('/test_entity')
-            .send({entity: {name: 'test1', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890'}})
+            .send({entity: {name: 'test1', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890', body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}})
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
@@ -327,7 +327,7 @@ describe('Test test_entity API', function () {
     it('Create new test_entity', function (done) {
         request(basytApp.app)
             .post('/test_entity')
-            .send({entity: {name: 'test2', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890'}})
+            .send({entity: {name: 'test2', email: 'a@b.com', url: 'http://ab.cd.com', telephone: '1234567890', body: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'}})
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
@@ -407,6 +407,73 @@ describe('Test test_entity API', function () {
             });
     });
 
+    it('Test text search in test_entity', function(done){
+        request(basytApp.app)
+            .put('/test_entity/search')
+            .query({q: 'sit amet'})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body).have.property('result');
+                should(res.body.result.length).be.exactly(1);
+                done();
+            });
+    });
+
+    it('Test find all text search in test_entity', function(done){
+        request(basytApp.app)
+            .put('/test_entity/search')
+            .query({q: 'dolor'})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body).have.property('result');
+                should(res.body.result.length).be.exactly(2);
+                done();
+            });
+    });
+
+    it('Negative test text search in test_entity', function(done){
+        request(basytApp.app)
+            .put('/test_entity/search')
+            .query({q: 'basyt'})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.result.length).be.exactly(0);
+                done();
+            });
+    });
+
+    it('Text search with extra query params in test_entity', function(done){
+        request(basytApp.app)
+            .put('/test_entity/search')
+            .send({query: {name: 'test2'}})
+            .query({q: 'dolor'})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.result.length).be.exactly(1);
+                done();
+            });
+    });
+
     it('Update test_entity', function (done) {
         request(basytApp.app)
             .put('/test_entity/' + entity.id)
@@ -452,6 +519,7 @@ describe('Test test_entity API', function () {
                 should(res.body.success).be.exactly(true);
                 should(res.body).have.property('result');
                 should(res.body.result).have.property('related_id');
+                should(res.body.result).have.property('related_name');
                 should(res.body.result.related_id).be.exactly(entity.id);
                 rel = res.body.result;
                 done();

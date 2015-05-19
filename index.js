@@ -64,7 +64,8 @@ function Basyt() {
 
     this.truncateEntities = function () {
         _.forOwn(process.basyt.collections, function (entity) {
-            entity.drop().catch(function(){return;});
+            console.log(entity.name);
+            entity.delete({}).catch(function(){return;});
         });
     };
 

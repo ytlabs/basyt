@@ -9,6 +9,10 @@ module.exports = {
                 type: "numeric",
                 minLength: 7,
                 maxLength: 11
+            },
+            body: {
+                type: "string",
+                search: true
             }
         }
     },
