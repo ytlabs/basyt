@@ -441,6 +441,22 @@ describe('Test test_entity API', function () {
             });
     });
 
+    it('Count with text search in test_entity', function(done){
+        request(basytApp.app)
+            .put('/test_entity/count')
+            .query({q: 'dolor'})
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                should(res.body.total).be.exactly(2);
+                done();
+            });
+    });
+
     it('Negative test text search in test_entity', function(done){
         request(basytApp.app)
             .put('/test_entity/search')

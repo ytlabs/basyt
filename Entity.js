@@ -57,7 +57,7 @@ var restActions = {
             if (_.isUndefined(req.body.entity))
                 throw new Errors.BasytError({message: 'Bad Request'}, 400);
             if (req.isQuery) {
-                if (req.params.entity_id !== 'list' && _.isArray(req.body.entity)) {
+                if (req.action_name !== 'create_bulk' && _.isArray(req.body.entity)) {
                     throw new Errors.BasytError({message: 'Bad Request'}, 400);
                 }
                 else {
@@ -93,7 +93,10 @@ var restActions = {
         },
         'count': function (req, res) {
             var entity_query = _.extend({}, req.body.query, req.entity_query);
-            return req.collection.count(entity_query)
+            if (req.action_name === 'search' && _.isString(req.query.q)) {
+                req.entity_query_options.search_text = req.query.q;
+            };
+            return req.collection.count(entity_query, _.extend({}, req.body.query_options, req.entity_query_options))
                 .then(function (count) {
                     return res.json({success: true, result: {}, total: count})
                 })
@@ -167,7 +170,6 @@ function Entity(fileName, config_path) {
     });
 
     var registerAction = function (action, action_name, native) {
-        console.log(native);
         //check auth levels
         if (native) {
             if (!_.isUndefined(entityConfig.auth_levels[action_name])) {
