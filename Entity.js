@@ -31,7 +31,7 @@ var restActions = {
             }
             else {
                 var entity_query = _.extend({}, req.body.query, req.entity_query);
-                if(req.action_name === 'search' && _.isString(req.query.q)) {
+                if (req.action_name === 'search' && _.isString(req.query.q)) {
                     req.entity_query_options.search_text = req.query.q;
                 }
                 if (req.action_name === 'update_bulk' && !_.isUndefined(req.body.update)) {
@@ -105,11 +105,11 @@ var restActions = {
         'create': {path: '/', method: 'post', action: restActions.post},
         'update_bulk': {path: '/', method: 'put', action: restActions.put},
         'delete_bulk': {path: '/', method: 'delete', action: restActions.delete},
-        'count': {path:'/count', method: 'put', action: restActions.count},
+        'count': {path: '/count', method: 'put', action: restActions.count},
         'list': {path: '/list', method: 'get', action: restActions.get},
         'query': {path: '/list', method: 'put', action: restActions.put},
         'search': {path: '/search', method: 'put', action: restActions.put},
-        'create_bulk': {path: '/list', method: 'post', action: restActions.post},                
+        'create_bulk': {path: '/list', method: 'post', action: restActions.post},
         'read': {path: '/:entity_id', method: 'get', action: restActions.get},
         'update': {path: '/:entity_id', method: 'put', action: restActions.put},
         'delete': {path: '/:entity_id', method: 'delete', action: restActions.delete}
@@ -160,31 +160,33 @@ function Entity(fileName, config_path) {
     if (_.isUndefined(entityConfig.disable_create_bulk)) entityConfig.disable_create_bulk = true;
 
     router.param('entity_id', function (req, res, next, entity_id) {
-        if (entity_id === 'list' || entity_id === 'count') {
-            req.entity_query = {};
-            req.isQuery = true;
-        }
-        else {
-            req.entity_query = {};
-            req.entity_query[entityCollection.idField] = entity_id;
-            req.isQuery = false;
-        }
+        req.entity_query = {};
+        req.entity_query[entityCollection.idField] = entity_id;
+        req.isQuery = false;
         next();
     });
 
-    _.forOwn(entityConfig.customActions, function (action, action_name) {
+    var registerAction = function (action, action_name, native) {
+        console.log(native);
         //check auth levels
-        if (!_.isUndefined(action.auth_level)) {
-            router[action.method](action.path, Auth.getAuthInterceptor(action.auth_level));
+        if (native) {
+            if (!_.isUndefined(entityConfig.auth_levels[action_name])) {
+                router[action.method](action.path, Auth.getAuthInterceptor(entityConfig.auth_levels[action_name]));
+            }
         }
+        else {
+            if (!_.isUndefined(action.auth_level)) {
+                router[action.method](action.path, Auth.getAuthInterceptor(action.auth_level));
+            }
+        }
+
         //prepare query params
-        router[action.method](action.path, function(req,res,next){
+        router[action.method](action.path, function (req, res, next) {
             req.action_name = action_name;
             next();
         });
         router[action.method](action.path, queryOptionsInterceptor);
 
-        //install custom interceptors
         if (_.isFunction(entityConfig.interceptors.all)) {
             router[action.method](action.path, entityConfig.interceptors.all);
         }
@@ -196,16 +198,18 @@ function Entity(fileName, config_path) {
             });
         }
 
-        if (_.isFunction(action.interceptors)) {
-            router[action.method](action.path, action.interceptors);
+        //install custom interceptors
+        var interceptors = native ? entityConfig.interceptors[action_name] : action.interceptors;
+
+        if(!_.isArray(interceptors)) {
+            interceptors = [interceptors];
         }
-        else if (_.isArray(action.interceptors)) {
-            _.forEach(action.interceptors, function (interceptor) {
-                if (_.isFunction(interceptor)) {
-                    router[action.method](action.path, interceptor);
-                }
-            });
-        }
+
+        _.forEach(interceptors, function (interceptor) {
+            if (_.isFunction(interceptor)) {
+                router[action.method](action.path, interceptor);
+            }
+        });
 
         //register action
         router[action.method](action.path, action.action);
@@ -216,56 +220,18 @@ function Entity(fileName, config_path) {
             path: '/' + entityCollection.name + action.path,
             auth_level: action.auth_level
         };
+    }
+
+    _.forOwn(entityConfig.customActions, function(action, action_name){
+        registerAction(action, action_name);
     });
 
     _.forOwn(entitySchemes, function (scheme, schemeName) {
         if (entityConfig['disable_' + schemeName] !== true) {
-            //check auth levels
-            if (!_.isUndefined(entityConfig.auth_levels[schemeName])) {
-                router[scheme.method](scheme.path, Auth.getAuthInterceptor(entityConfig.auth_levels[schemeName]));
-            }
-
-            //prepare query params
-            router[scheme.method](scheme.path, function(req,res,next){
-                req.action_name = schemeName;
-                next();
-            });
-            router[scheme.method](scheme.path, queryOptionsInterceptor);
-
-            //install custom interceptors
-            if (_.isFunction(entityConfig.interceptors.all)) {
-                router[scheme.method](scheme.path, entityConfig.interceptors.all);
-            }
-            else if (_.isArray(entityConfig.interceptors.all)) {
-                _.forEach(entityConfig.interceptors.all, function (interceptor) {
-                    if (_.isFunction(interceptor)) {
-                        router[scheme.method](scheme.path, interceptor);
-                    }
-                });
-            }
-
-            if (_.isFunction(entityConfig.interceptors[schemeName])) {
-                router[scheme.method](scheme.path, entityConfig.interceptors[schemeName]);
-            }
-            else if (_.isArray(entityConfig.interceptors[schemeName])) {
-                _.forEach(entityConfig.interceptors[schemeName], function (interceptor) {
-                    if (_.isFunction(interceptor)) {
-                        router[scheme.method](scheme.path, interceptor);
-                    }
-                });
-            }
-
-            //register action
-            router[scheme.method](scheme.path, scheme.action);
-
-            //set routing
-            routing[entityCollection.name + ':' + schemeName] = {
-                method: scheme.method.toUpperCase(),
-                path: '/' + entityCollection.name + scheme.path,
-                auth_level: entityConfig.auth_levels[schemeName]
-            };
+            registerAction(scheme, schemeName, true);
         }
     });
+
     this.collection = entityCollection;
     this.config = entityConfig;
     this.router = router;

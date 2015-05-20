@@ -15,7 +15,8 @@ GLOBAL.APP_CONFIG = {
 
         storage: 'mongodb',
         auth: {
-            token: 'very.secre!,t0k3n'
+            token: 'very.secre!,t0k3n',
+            method: 'jwt'
         }
     },
     mongodb: "basyt_testdb"

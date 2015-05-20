@@ -12,5 +12,11 @@ module.exports = {
             }
         }
     },
-    disable_delete_bulk: false
+    disable_delete_bulk: false,
+    interceptors: {
+        all: [function(req, res, next) {
+            res.set('test-field', 'it.works');
+            next();
+        }]
+    }
 };

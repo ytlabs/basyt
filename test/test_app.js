@@ -358,7 +358,7 @@ describe('Test test_entity API', function () {
 
     it('Count test_entity', function (done) {
         request(basytApp.app)
-            .get('/test_entity/count')
+            .put('/test_entity/count')
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
@@ -533,6 +533,7 @@ describe('Test test_entity API', function () {
             .set('Accept', 'application/json')
             .set('Authorization', 'Bearer ' + token)
             .expect('Content-Type', /json/)
+            .expect('test-field', 'it.works')
             .expect(200)
             .end(function (err, res) {
                 should(err).be.exactly(null);
