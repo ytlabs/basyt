@@ -9,7 +9,8 @@ module.exports = {
                 role: 'related',
                 foreign: '_id',
                 transfer: {'related_name': 'name'}
-            }
+            },
+            related_name: "string"
         }
     },
     disable_delete_bulk: false,

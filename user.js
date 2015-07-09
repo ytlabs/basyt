@@ -14,13 +14,11 @@ var customActions = {
             if (_.isUndefined(req.body.password))
                 throw new Errors.InputError([['password', 'required']]);
             var projection = _.clone(req.collection.projection);
-            delete projection.password;
-            delete projection.roles;
-            return req.collection.read({email: req.body.email}, {depth: 2, projection: projection})
+            projection.password = 1;
+            delete projection.created_at;
+            return req.collection.read({email: req.body.email}, {depth: 2, projection: projection}, true)
                 .then(function (entity) {
                     if (req.collection.verifyPassword(req.body.password, entity.password)) {
-                        delete entity.password;
-                        delete entity.created_at;
                         entity.token = Auth.issueToken(entity);
                     }
                     else {
@@ -121,8 +119,7 @@ module.exports = {
                 element: {
                     type: "string",
                     in: ["USER", "ADMIN", "LORD"]
-                },
-                readable: false
+                }
             },
             created_at: {
                 type: "datetime",
