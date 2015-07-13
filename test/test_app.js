@@ -293,6 +293,19 @@ describe('Authorization tests', function(){
 
 describe('Test test_entity API', function () {
     var entity;
+    it('Authorize test user with token', function(done) {
+        request(basytApp.app)
+            .get('/user/a')
+            .set('Accept', 'application/json')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+                should(err).be.exactly(null);
+                should(res.body.success).be.exactly(true);
+                done();
+            });
+    });
     it('Create new test_entity', function (done) {
         request(basytApp.app)
             .post('/test_entity')

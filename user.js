@@ -28,6 +28,14 @@ var customActions = {
                 })
                 .catch(Errors.stdCatchFunction(res));
         }
+    },
+    authorize: {
+        path: '/a',
+        method: 'get',
+        auth_level: 'USER',
+        action: function(req, res) {
+            return res.json({success: true});
+        }
     }
     /*
      passwordResetRequest: {},
