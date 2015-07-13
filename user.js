@@ -210,5 +210,5 @@ module.exports = {
     disable_update_bulk: true,
     disable_delete_bulk: true,
     disable_create_bulk: true,
-    customActions: customActions
+    customActions: _.extend({}, customActions, Config.userCustomActions)
 };
