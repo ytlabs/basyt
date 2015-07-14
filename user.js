@@ -16,9 +16,15 @@ var customActions = {
             var projection = _.clone(req.collection.projection);
             projection.password = 1;
             delete projection.created_at;
-            return req.collection.read({email: req.body.email}, {depth: 2, projection: projection}, true)
+            return req.collection.read({email: req.body.email.toLowerCase()}, {depth: 2, projection: projection}, true)
                 .then(function (entity) {
                     if (req.collection.verifyPassword(req.body.password, entity.password)) {
+                        delete entity.password;
+                        delete entity.created_at;
+                        delete entity.activation_code;
+
+                        if(Config.userTokenFields)
+                            entity = _.pick(entity, Config.userTokenFields);
                         entity.token = Auth.issueToken(entity);
                     }
                     else {
@@ -53,6 +59,7 @@ if (Config.disable_register !== true) {
             var user = req.body.entity,
                 activation_code,
                 user_model;
+            user.email = user.email.toLowerCase();
             return req.collection.count({email: user.email})
                 .then(function (count) {
                     if (count > 0) {
@@ -70,8 +77,6 @@ if (Config.disable_register !== true) {
                     return req.collection.create(user_model);
                 })
                 .then(function (result) {
-                    delete user_model.password;
-                    delete user_model.created_at;
                     this.publisher.publish('messenger:mail', JSON.stringify({
                         article: {
                             type: 'entity',
@@ -83,8 +88,15 @@ if (Config.disable_register !== true) {
                             activation_code: user_model.activation_code
                         }
                     }));
+                    delete user_model.password;
+                    delete user_model.created_at;
                     delete user_model.activation_code;
+
+                    if(Config.userTokenFields)
+                        user_model = _.pick(user_model, Config.userTokenFields);
+
                     user_model.token = Auth.issueToken(user_model);
+
                     return user_model;
                 })
                 .then(function (result) {
@@ -145,6 +157,7 @@ module.exports = {
 
         methods: {
             beforeCreate: function user_entity_before_create(entity) {
+                entity.email = entity.email.toLowerCase();
                 entity.password = this.hashPassword(entity.password);
                 if (_.isUndefined(entity.roles)) {
                     entity.roles = ['USER'];
