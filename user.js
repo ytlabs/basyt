@@ -16,9 +16,13 @@ var customActions = {
             var projection = _.clone(req.collection.projection);
             projection.password = 1;
             delete projection.created_at;
-            return req.collection.read({email: req.body.email}, {depth: 2, projection: projection}, true)
+            return req.collection.read({email: req.body.email.toLowerCase()}, {depth: 2, projection: projection}, true)
                 .then(function (entity) {
                     if (req.collection.verifyPassword(req.body.password, entity.password)) {
+                        delete entity.password;
+                        delete entity.created_at;
+                        if(Config.userTokenFields)
+                            entity = _.pick(entity, Config.userTokenFields);
                         entity.token = Auth.issueToken(entity);
                     }
                     else {
@@ -58,6 +62,9 @@ if (Config.disable_register !== true) {
         auth_level: 'ANON',
         action: function UserRegister(req, res, next) {
             var user = req.body.entity;
+            if (_.isUndefined(user.email))
+                throw new Errors.InputError([['email', 'required']]);
+            user.email = user.email.toLowerCase();
             return req.collection.count({email: user.email})
                 .then(function (count) {
                     if (count > 0) {
@@ -69,8 +76,8 @@ if (Config.disable_register !== true) {
                     return req.collection.create(user);
                 })
                 .then(function (result) {
-                    delete result.password;
-                    delete result.created_at;
+                    if(Config.userTokenFields)
+                        result = _.pick(result, Config.userTokenFields);
                     result.token = Auth.issueToken(result);
                     return result;
                 })
@@ -125,6 +132,7 @@ module.exports = {
 
         methods: {
             beforeCreate: function user_entity_before_create(entity) {
+                entity.email = entity.email.toLowerCase();
                 entity.password = this.hashPassword(entity.password);
                 if (_.isUndefined(entity.roles)) {
                     entity.roles = ['USER'];
