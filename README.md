@@ -16,7 +16,7 @@ $ npm install basyt-mongodb-collection
 ## Features
 * is an extension over awesome nodejs framework expressjs
 * generates CRUDL API and routing based on entities and controllers located in corresponding folders at the startup
-* provides json web token based authentication 
+* provides json web token based authentication
 * provides redis based notification for entity updates
 * provides user management and role based access control
 
@@ -27,15 +27,15 @@ To utilize basyt as foundation of your API, you need several declarations. First
 
 ```js
 GLOBAL.APP_CONFIG = {
-    base_folder: __dirname + '/', 
+    base_folder: __dirname + '/',
     //base_folder definition is required, you probably will keep this line as it is
-    
-    package_file: GLOBAL.APP_CONFIG.base_folder + 'package.json', 
+
+    package_file: GLOBAL.APP_CONFIG.base_folder + 'package.json',
     //path for package.json file. basyt uses package.json to get application name and version.
     //when not defined package_file is set to base_folder + 'package.json'
-    
+
     basyt: { //scope for basyt related configuration
-        port: 5850, 
+        port: 5850,
         //port number that basyt HTTP server will listen
         entity_path: '/',
         //url base path for entity API endpoints. default is '/'
@@ -48,11 +48,11 @@ GLOBAL.APP_CONFIG = {
         //when not defined, controllers_folder is set to base_folder + 'controllers'
         enable_ws: true,
         //enables socket.io based websocket. default true
-        enable_cors: true, 
+        enable_cors: true,
         //enables CORS setup. default false
         enable_auth: true,
         //enables user management and authentication. default true
-        cors: { 
+        cors: {
           //CORS headers to be setup. Required only when enable_cors is true
           //following values can be set for CORS setup.
           //Content_Type header field is allowed by default
@@ -63,12 +63,12 @@ GLOBAL.APP_CONFIG = {
         },
         auth: {
           //required when enable_auth is true.
-            token: 'your.secret.token',
-            //token to be used for jwt
+            secret_key: 'your.secret.key',
+            //key to be used for generating json web token
             method: 'jwt'
             //currently only supported method is jwt
         }
-        disable_discovery: false, 
+        disable_discovery: false,
         //when discovery is enabled, GET request to server's base address will provide all possible API
     },
     mongodb: { //scope for mongodb collection configuration
@@ -106,10 +106,10 @@ module.exports = {
                 maxLength: 11
             }
         },
-        event_names: ['{{obj.email}}:test_entity'],
-        //basyt emits redis event for entity updates. 
+        event_channels: ['{{obj.email}}:test_entity'],
+        //basyt emits redis event for entity updates.
         //By default, it emits entity:{{entity name}}:{{object id}} event
-        //for additional events event_names list is used.
+        //for additional events event_channels list is used.
         methods: {
           //list of collection methods
           //here hook functions for entity can be defined. for instance beforeCreate, afterCreate etc.
@@ -176,7 +176,6 @@ module.exports = {
 For a controller file named `test\_controller.js` with content given above, there will be an api for address `http://hostname/test_controller/example_action`.
 
 That's all for a quick start. Wiki pages are coming soon!
-  
+
 ## Why do we call it basyt
 In Turkish *basit* means *simple*. That is the motivation: an extension over expressjs to make things simpler. Since our company's initials are YT, we decided to call the project **basyt**, simple web package from Yonca Teknoloji.
-

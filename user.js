@@ -29,7 +29,7 @@ var customActions = {
                 .catch(Errors.stdCatchFunction(res));
         }
     },
-    authorize: {
+    authenticate: {
         path: '/a',
         method: 'get',
         auth_level: 'USER',
@@ -44,15 +44,20 @@ var customActions = {
      */
 };
 
+var restrictUserIdInterceptor = [function(req, res, next) {
+    if (!req.isADMIN && !req.isLORD) {
+        req.entity_query[req.collection.idField] = req.auth_user.id;
+    }
+    next();
+}];
+
 if (Config.disable_register !== true) {
     customActions.register = {
         path: '/register',
         method: 'post',
         auth_level: 'ANON',
         action: function UserRegister(req, res, next) {
-            var user = req.body.entity,
-                activation_code,
-                user_model;
+            var user = req.body.entity;
             return req.collection.count({email: user.email})
                 .then(function (count) {
                     if (count > 0) {
@@ -61,31 +66,13 @@ if (Config.disable_register !== true) {
                     return true;
                 })
                 .then(function () {
-                    activation_code = req.collection.createRandomCode(6);
-                    user_model = _.extend({}, user, {
-                        activation_code: activation_code,
-                        created_at: new Date()
-                    });
-
-                    return req.collection.create(user_model);
+                    return req.collection.create(user);
                 })
                 .then(function (result) {
-                    delete user_model.password;
-                    delete user_model.created_at;
-                    this.publisher.publish('messenger:mail', JSON.stringify({
-                        article: {
-                            type: 'entity',
-                            entity: this.entity,
-                            entity_id: result[this.idField]
-                        },
-                        message: 'user.welcome',
-                        data: {
-                            activation_code: user_model.activation_code
-                        }
-                    }));
-                    delete user_model.activation_code;
-                    user_model.token = Auth.issueToken(user_model);
-                    return user_model;
+                    delete result.password;
+                    delete result.created_at;
+                    result.token = Auth.issueToken(result);
+                    return result;
                 })
                 .then(function (result) {
                     return res.json({success: true, result: result});
@@ -101,7 +88,8 @@ module.exports = {
         attributes: _.extend({}, {
             name: {
                 type: "string",
-                required: true
+                required: true,
+                search: true
             },
             email: {
                 type: "email",
@@ -109,12 +97,8 @@ module.exports = {
                 index: true,
                 indexProps: {
                     unique: true
-                }
-            },
-            telephone: {
-                type: "numeric",
-                minLength: 7,
-                maxLength: 11
+                },
+                search: true
             },
             password: {
                 type: "string",
@@ -135,10 +119,6 @@ module.exports = {
                 'default': function () {
                     return new Date();
                 },
-                readable: false
-            },
-            activation_code: {
-                type: "string",
                 readable: false
             }
         }, Config.userExtraFields),
@@ -180,7 +160,7 @@ module.exports = {
                 return bcrypt.genSaltSync(length);
             }
         },
-        eventNames: Config.userEventNames
+        event_channels: Config.userEventChannels
     },
 
     auth_levels: _.extend({}, {
@@ -188,24 +168,26 @@ module.exports = {
         'list': 'ADMIN',
         'update': 'USER',
         'query': 'ADMIN',
+        'search': 'ADMIN',
         'create': 'ADMIN',
         'delete': 'ADMIN'
     }, Config.userAPIAuthLevels),
 
-    interceptors: _.extend({}, {
-        read: function user_entity_read_interceptor(req, res, next) {
-            if (!req.isADMIN && !req.isLORD) {
-                req.entity_query[req.collection.idField] = req.auth_user.id;
-            }
-            next();
-        },
-        update: function user_entity_update_interceptor(req, res, next) {
-            if (!req.isADMIN && !req.isLORD) {
-                req.entity_query[req.collection.idField] = req.auth_user.id;
-            }
-            next();
-        }
-    }, Config.userAPIInterceptors),
+    interceptors: _.extend({}, Config.userAPIInterceptors,
+      (Config.userDisableAuthRestriction === true)
+      ? {}
+      : {
+        read: _.isUndefined(Config.userAPIInterceptors) || _.isUndefined(Config.userAPIInterceptors.read)
+          ? restrictUserIdInterceptor
+          : _.isFunction(Config.userAPIInterceptors.read)
+            ? restrictUserIdInterceptor.push(Config.userAPIInterceptors.read)
+            : restrictUserIdInterceptor.concat(Config.userAPIInterceptors.read),
+        update: _.isUndefined(Config.userAPIInterceptors) || _.isUndefined(Config.userAPIInterceptors.update)
+          ? restrictUserIdInterceptor
+          : _.isFunction(Config.userAPIInterceptors.update)
+            ? restrictUserIdInterceptor.push(Config.userAPIInterceptors.update)
+            : restrictUserIdInterceptor.concat(Config.userAPIInterceptors.update)
+        }),
 
     disable_update_bulk: true,
     disable_delete_bulk: true,

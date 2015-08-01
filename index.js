@@ -54,7 +54,7 @@ function Basyt() {
         console.log('Installed CORS');
         this.app.use(function (req, res, next) {
             res.header('Access-Control-Allow-Origin', config.basyt.cors.origin);
-            res.header('Access-Control-Allow-Methods', config.basyt.cors.methods);
+            res.header('Access-Control-Allow-Methods', config.basyt.cors.methods || 'GET,PUT,POST,DELETE');
             if (!_.isUndefined(config.basyt.auth) && config.basyt.auth.method === 'jwt') {
                 res.header('Access-Control-Allow-Headers', [].concat(['Content-Type', 'Authorization'], config.basyt.cors.headers));
             }
@@ -65,7 +65,7 @@ function Basyt() {
     this.truncateEntities = function () {
         _.forOwn(process.basyt.collections, function (entity) {
             console.log(entity.name);
-            entity.delete({}).catch(function () {
+            entity.delete({}, {multi: true}).catch(function () {
                 return;
             });
         });
@@ -74,7 +74,7 @@ function Basyt() {
     var entityRoutings = [{}];
 
     //Initialize Auth
-    if (config.basyt.enable_auth !== false && !_.isUndefined(config.basyt.auth)) {
+    if (config.basyt.enable_auth === true && !_.isUndefined(config.basyt.auth)) {
         console.log('Installed Auth');
         Auth.initialize(config.basyt.auth);
         var userEntity, userSettingsEntity;

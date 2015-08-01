@@ -3,7 +3,7 @@ var _ = require('lodash');
 var secret;
 var Auth = {
     initialize: function (config) {
-        secret = config.token;
+        secret = config.secret_key;
     },
     decodeRoles: function (req) {
         if (req.auth_user.roles) {
@@ -57,7 +57,7 @@ var Auth = {
                 }
                 else {
                     Auth.verifyToken(token, function (err, payload) {
-                        if (err) return res.status(401).json({err: {message: 'Authorization Failed [R]'}});
+                        if (err) return res.status(401).json({err: {message: 'Authentication Failed [R]'}});
 
                         req.auth_user = payload;
                         Auth.decodeRoles(req);
@@ -72,11 +72,11 @@ var Auth = {
             var token = Auth.getRequestToken(req);
 
             if (token === false) {
-                return res.status(401).json({err: {message: 'Authorization Failed [B]'}});
+                return res.status(401).json({err: {message: 'Authentication Failed [B]'}});
             }
             else {
                 Auth.verifyToken(token, function (err, payload) {
-                    if (err) return res.status(401).json({err: {message: 'Authorization Failed [W]'}});
+                    if (err) return res.status(401).json({err: {message: 'Authentication Failed [W]'}});
                     //if authorized user does not have role, do not let
                     //console.log(req.originalUrl + ' ' + auth_level + '\n');
                     if (_.isUndefined(payload.roles)) res.status(401).json({err: {message: 'Authorization Failed [D]'}});
@@ -96,7 +96,7 @@ var Auth = {
                         next();
                     }
                     else {
-                        return res.status(401).json({err: {message: 'Authorization Failed [K]'}});
+                        return res.status(401).json({err: {message: 'Authentication Failed [K]'}});
                     }
                 });
             }

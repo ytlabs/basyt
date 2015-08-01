@@ -5,6 +5,7 @@ GLOBAL.APP_CONFIG = {
 
         enable_ws: true,
         enable_cors: true,
+        enable_auth: true,
 
         cors: {
             origin: 'http://localhost:8580',
@@ -15,7 +16,7 @@ GLOBAL.APP_CONFIG = {
 
         storage: 'mongodb',
         auth: {
-            token: 'very.secre!,t0k3n',
+            secret_key: 'very.secre!,t0k3n',
             method: 'jwt'
         }
     },

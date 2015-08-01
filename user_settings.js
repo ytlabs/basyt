@@ -19,6 +19,7 @@ module.exports = {
     disable_read: true,
     disable_list: true,
     disable_query: true,
+    disable_search: true,
     disable_create: true,
     disable_delete: true,
     disable_update: true,
