@@ -2,6 +2,7 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     fs = require("fs"),
+    bunyan = require("bunyan"),
     Entity = require('./Entity'),
     Errors = require('./Errors'),
     Auth = require('./Auth');
@@ -17,6 +18,14 @@ function Basyt() {
     var entitiesFolder = config.basyt.entities_folder || config.base_folder + 'entities/';
     var controllersFolder = config.basyt.controllers_folder || config.base_folder + 'controllers/';
     var projectInfo = require(packageFile);
+
+
+    var log, access_log;
+    log = bunyan.createLogger({name: projectInfo.name, streams: config.basyt.log_streams});
+    access_log = bunyan.createLogger({name: projectInfo.name+"_access", streams: config.basyt.access_log_streams});
+
+    GLOBAL.logger = log;
+    GLOBAL.access_logger = access_log;
 
     //setup properties
     this.collections = {};
@@ -39,19 +48,19 @@ function Basyt() {
         var port = process.basyt.http_server.address()
             .port;
 
-        console.log('Listening at http://%s:%s', host, port);
+        log.info('Listening at http://%s:%s', host, port);
 
     });
 
     //Create basyt socketio websocket server
     if (config.basyt.enable_ws !== false) {
         this.ws_server = require('socket.io')(this.http_server);
-        console.log('Started websocket');
+        log.info('Started websocket');
     }
 
     //Initialize CORS Middleware
     if (config.basyt.enable_cors === true && !_.isUndefined(config.basyt.cors)) {
-        console.log('Installed CORS');
+        log.info('Installed CORS');
         this.app.use(function (req, res, next) {
             res.header('Access-Control-Allow-Origin', config.basyt.cors.origin);
             res.header('Access-Control-Allow-Methods', config.basyt.cors.methods || 'GET,PUT,POST,DELETE');
@@ -64,7 +73,7 @@ function Basyt() {
 
     this.truncateEntities = function () {
         _.forOwn(process.basyt.collections, function (entity) {
-            console.log(entity.name);
+            log.info("Truncated %s", entity.name);
             entity.delete({}, {multi: true}).catch(function () {
                 return;
             });
@@ -75,7 +84,7 @@ function Basyt() {
 
     //Initialize Auth
     if (config.basyt.enable_auth === true && !_.isUndefined(config.basyt.auth)) {
-        console.log('Installed Auth');
+        log.info('Installed Auth');
         Auth.initialize(config.basyt.auth);
         var userEntity, userSettingsEntity;
 
@@ -99,11 +108,11 @@ function Basyt() {
 
     //Import entities
     if (fs.existsSync(entitiesFolder)) {
-        console.log('Importing Entities');
+        log.info('Importing Entities');
         fs.readdirSync(entitiesFolder).forEach(function (file, index) {
             var entityName = file.toLowerCase().slice(0, -3),
                 entityInstance = new Entity(entityName, entitiesFolder + file);
-            console.log("\t" + (index + 1) + ". " + entityName);
+            log.info("%s. %s Entity is imported",(index + 1), entityName);
             this.app.use((config.basyt.entity_path || '/') + entityName, entityInstance.router);
             entityRoutings.push(entityInstance.routing);
         }, this);
@@ -111,13 +120,13 @@ function Basyt() {
 
     //Import controllers
     if (fs.existsSync(controllersFolder)) {
-        console.log('Importing Controllers');
+        log.info('Importing Controllers');
         fs.readdirSync(controllersFolder).forEach(function (file, index) {
             var controllerName = file.toLowerCase().slice(0, -3),
                 controllerActions = require(controllersFolder + file),
                 router = express.Router(),
                 routing = {};
-            console.log("\t" + (index + 1) + ". " + controllerName);
+            log.info("%s. %s Controller is imported", (index + 1), controllerName);
             _.forEach(controllerActions, function (action, actionName) {
                 //auth interceptor
                 if (!_.isUndefined(action.auth_level)) {
@@ -160,7 +169,7 @@ function Basyt() {
     //Register discovery
     var started = new Date();
     if (config.basyt.disable_discovery !== true) {
-        console.log('Enabled discovery');
+        log.info('Enabled discovery');
         this.routing = _.extend.apply(_, entityRoutings);
         this.app.get('/', function (req, res) {
             return res.json({
@@ -182,4 +191,11 @@ function Basyt() {
             });
         });
     }
+
+    process.on('uncaughtException', function (err) {
+        // prevent infinite recursion
+        process.removeListener('uncaughtException', arguments.callee);
+        logger.fatal(err);
+    });
 }
+

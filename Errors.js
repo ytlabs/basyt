@@ -23,6 +23,7 @@ module.exports = {
     BasytError: BasytError,
     stdCatchFunction: function (res) {
         return function (err) {
+            if(!err.statusCode || err.statusCode === 500) GLOBAL.access_logger.error(err);
             return res.status(err.statusCode || 500).json({success: false, err: err.err});
         };
     }

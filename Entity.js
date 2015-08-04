@@ -12,7 +12,7 @@ var restActions = {
                     .catch(Errors.stdCatchFunction(res));
             }
             else {
-                _.forOwn(req.entity_config.collection.attributes, function (properties, field) {
+                _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query[field])) {
                         req.entity_query[field] = req.query[field];
                     }
@@ -76,7 +76,7 @@ var restActions = {
         },
         'delete': function (req, res) {
             if (req.isQuery !== false) {
-                _.forOwn(req.entity_config.collection.attributes, function (properties, field) {
+                _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query[field])) {
                         req.entity_query[field] = req.query[field];
                     }
@@ -138,6 +138,15 @@ function Entity(fileName, config_path) {
             };
             req.collection = entityCollection;
             req.entity_config = entityConfig;
+
+            if(req.query.sort) {
+                _.forEach(req.collection.visible_fields, function (field) {
+                    if (!_.isUndefined(req.query["sort_"+field])) {
+                        req.entity_query_options.sort[field] = (req.query["sort_"+field] === -1) ? -1 : 1;
+                    }
+                });
+            }
+
             next();
         };
 
