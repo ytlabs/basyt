@@ -35,7 +35,7 @@ var restActions = {
                     req.entity_query_options.search_text = req.query.q;
                 }
                 if (req.action_name === 'update_bulk' && !_.isUndefined(req.body.update)) {
-                    query = req.collection.update(entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));
+                    query = req.collection.update(entity_query, req.body.update, _.extend({multi: true}, req.body.query_options, req.entity_query_options));
                 }
                 else {
                     query = req.collection.query(entity_query, _.extend({}, req.body.query_options, req.entity_query_options));
@@ -76,6 +76,7 @@ var restActions = {
         },
         'delete': function (req, res) {
             if (req.isQuery !== false) {
+                req.entity_query_options.justOne = false;
                 _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query[field])) {
                         req.entity_query[field] = req.query[field];
