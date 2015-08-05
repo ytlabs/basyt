@@ -140,6 +140,7 @@ function Entity(fileName, config_path) {
             req.entity_config = entityConfig;
 
             if(req.query.sort) {
+                req.entity_query_options.sort = {};
                 _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query["sort_"+field])) {
                         req.entity_query_options.sort[field] = (req.query["sort_"+field] === -1) ? -1 : 1;
