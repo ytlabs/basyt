@@ -100,7 +100,7 @@ function Basyt() {
             //setup jwt auth for socket
             var socketioJwt = require("socketio-jwt");
             this.ws_server.on('connection', socketioJwt.authorize({
-                secret: config.basyt.auth.token,
+                secret: config.basyt.auth.secret_key,
                 timeout: 15000 // 15 seconds to send the authentication message
             }));
         }
