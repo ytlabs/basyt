@@ -4,7 +4,7 @@ var Auth = require('./Auth');
 var Config = GLOBAL.APP_CONFIG.basyt.auth,
     Errors = require('./Errors');
 
-var tokenFields = _.union(['name', 'email', 'roles'], Config.userTokenFields);
+var tokenFields = _.union(['id', 'name', 'email', 'roles'], Config.userTokenFields);
 
 var customActions = {
     login: {
