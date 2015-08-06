@@ -5,14 +5,14 @@ node_js: "0.12"
 
 env:
   global:
-    - MONGODB_VERSION=3.0.3
+    - MONGODB_VERSION=3.0.5
 
 install:
   - wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGODB_VERSION.tgz
   - tar xfz mongodb-linux-x86_64-$MONGODB_VERSION.tgz
   - export PATH=`pwd`/mongodb-linux-x86_64-$MONGODB_VERSION/bin:$PATH
   - mkdir -p data/db
-  - mongod --dbpath=data/db &
+  - mongod --dbpath=data/db --logpath /dev/null &
   - sleep 3
   - npm install -g mocha
   - npm install -g istanbul
