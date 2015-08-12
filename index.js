@@ -5,6 +5,7 @@ var express = require('express'),
     bunyan = require("bunyan"),
     Entity = require('./Entity'),
     Errors = require('./Errors'),
+    redis = require('basyt-redis-client'),
     Auth = require('./Auth');
 
 module.exports = Basyt;
@@ -17,6 +18,7 @@ function Basyt() {
     var packageFile = config.package_file || config.base_folder + 'package.json';
     var entitiesFolder = config.basyt.entities_folder || config.base_folder + 'entities/';
     var controllersFolder = config.basyt.controllers_folder || config.base_folder + 'controllers/';
+    var listenersFolder = config.basyt.listeners_folder || config.base_folder + 'listeners/';
     var projectInfo = require(packageFile);
 
 
@@ -127,7 +129,7 @@ function Basyt() {
                 router = express.Router(),
                 routing = {};
             log.info("%s. %s Controller is imported", (index + 1), controllerName);
-            _.forEach(controllerActions, function (action, actionName) {
+            _.forOwn(controllerActions, function (action, actionName) {
                 //auth interceptor
                 if (!_.isUndefined(action.auth_level)) {
                     router[action.method](action.path, Auth.getAuthInterceptor(action.auth_level));
@@ -159,6 +161,70 @@ function Basyt() {
             entityRoutings.push(routing);
         });
     }
+
+    //Import listeners
+    if (fs.existsSync(listenersFolder)) {
+        var redisClient = redis.createClient();
+        log.info('Importing Listeners');
+        this.listener_setups = {
+            redis: {},
+            redis_pattern: {},
+            socket: {}
+        };
+        fs.readdirSync(listenersFolder).forEach(function (file, index) {
+            var listenerName = file.toLowerCase().slice(0, -3),
+                listener = require(listenersFolder + file);
+            log.info("%s. %s Listener is imported", (index + 1), listenerName);
+            _.forOwn(listener, function(setup, channel){
+                if(_.isUndefined(this.listener_setups[setup.source || 'redis'][channel]))
+                    this.listener_setups[setup.source || 'redis'][channel] = [];
+                this.listener_setups[setup.source || 'redis'][channel].push(setup);
+            }, this);
+
+
+            _.forOwn(this.listener_setups.redis, function(setup_list, channel){
+                redisClient.subscribe(channel);
+                redisClient.onMessage(function(ch, data) {
+                    for(var i = 0; i < setup_list.length; i++) {
+                        if(setup_list[i].eventName = data.eventName) {
+                            if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
+                                setup_list[i].action(data.data, ch);
+                            }
+                        }
+                    }
+                });
+            });
+
+            _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
+                redisClient.psubscribe(channel);
+                redisClient.onMessage(function(ch, data) {
+                    for(var i = 0; i < setup_list.length; i++) {
+                        if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
+                            setup_list[i].action(data, ch);
+                        }
+                    }
+                });
+            });
+
+            if (config.basyt.enable_ws !== false) {
+                this.ws_server.on('authenticated', function (socket) {
+                    _.forOwn(that.listener_setups.socket, function (setup_list, channel) {
+                        for(var i = 0; i < setup_list.length; i++) {
+                            if (setup_list[i].initialize) setup_list[i].initialize(socket);
+                        }
+                        socket.on(channel, function(data) {
+                            for(var i = 0; i < setup_list.length; i++) {
+                                if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
+                                    setup_list[i].action(data, socket);
+                                }
+                            }
+                        })
+                    });
+                });
+            }
+        }, this);
+    }
+
 
 
     this.app.use(function (err, req, res, next) {
@@ -198,4 +264,3 @@ function Basyt() {
         logger.fatal(err);
     });
 }
-
