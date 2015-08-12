@@ -4,6 +4,8 @@ var Auth = require('./Auth');
 var Config = GLOBAL.APP_CONFIG.basyt.auth,
     Errors = require('./Errors');
 
+var tokenFields = _.union(['id', 'name', 'email', 'roles'], Config.userTokenFields);
+
 var customActions = {
     login: {
         path: '/login',
@@ -21,8 +23,7 @@ var customActions = {
                     if (req.collection.verifyPassword(req.body.password, entity.password)) {
                         delete entity.password;
                         delete entity.created_at;
-                        if(Config.userTokenFields)
-                            entity = _.pick(entity, Config.userTokenFields);
+                        entity = _.pick(entity, tokenFields);
                         entity.token = Auth.issueToken(entity);
                     }
                     else {
@@ -76,8 +77,7 @@ if (Config.disable_register !== true) {
                     return req.collection.create(user);
                 })
                 .then(function (result) {
-                    if(Config.userTokenFields)
-                        result = _.pick(result, Config.userTokenFields);
+                    result = _.pick(result, tokenFields);
                     result.token = Auth.issueToken(result);
                     return result;
                 })

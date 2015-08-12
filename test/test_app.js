@@ -377,8 +377,7 @@ describe('Test test_entity API', function () {
             .expect('Content-Type', /json/)
             .expect(200)
             .end(function (err, res) {
-                should(err).be.exactly(null);                
-                console.log(res.body);
+                should(err).be.exactly(null);
                 should(res.body.success).be.exactly(true);
                 should(res.body).have.property('total');
                 should(res.body.total).be.exactly(2);

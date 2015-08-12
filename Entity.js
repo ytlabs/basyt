@@ -12,7 +12,7 @@ var restActions = {
                     .catch(Errors.stdCatchFunction(res));
             }
             else {
-                _.forOwn(req.entity_config.collection.attributes, function (properties, field) {
+                _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query[field])) {
                         req.entity_query[field] = req.query[field];
                     }
@@ -31,11 +31,11 @@ var restActions = {
             }
             else {
                 var entity_query = _.extend({}, req.body.query, req.entity_query);
-                if (req.action_name === 'search' && _.isString(req.query.q)) {
+                if (req.action_name === 'search' && _.isString(req.query.q) && !_.isEmpty(req.query.q)) {
                     req.entity_query_options.search_text = req.query.q;
                 }
                 if (req.action_name === 'update_bulk' && !_.isUndefined(req.body.update)) {
-                    query = req.collection.update(entity_query, req.body.update, _.extend({}, req.body.query_options, req.entity_query_options));
+                    query = req.collection.update(entity_query, req.body.update, _.extend({multi: true}, req.body.query_options, req.entity_query_options));
                 }
                 else {
                     query = req.collection.query(entity_query, _.extend({}, req.body.query_options, req.entity_query_options));
@@ -76,7 +76,8 @@ var restActions = {
         },
         'delete': function (req, res) {
             if (req.isQuery !== false) {
-                _.forOwn(req.entity_config.collection.attributes, function (properties, field) {
+                req.entity_query_options.justOne = false;
+                _.forEach(req.collection.visible_fields, function (field) {
                     if (!_.isUndefined(req.query[field])) {
                         req.entity_query[field] = req.query[field];
                     }
@@ -93,7 +94,7 @@ var restActions = {
         },
         'count': function (req, res) {
             var entity_query = _.extend({}, req.body.query, req.entity_query);
-            if (req.action_name === 'search' && _.isString(req.query.q)) {
+            if (_.isString(req.query.q)  && !_.isEmpty(req.query.q)) {
                 req.entity_query_options.search_text = req.query.q;
             };
             return req.collection.count(entity_query, _.extend({}, req.body.query_options, req.entity_query_options))
@@ -138,6 +139,16 @@ function Entity(fileName, config_path) {
             };
             req.collection = entityCollection;
             req.entity_config = entityConfig;
+
+            if(req.query.sort) {
+                req.entity_query_options.sort = {};
+                _.forEach(req.collection.visible_fields, function (field) {
+                    if (!_.isUndefined(req.query["sort_"+field])) {
+                        req.entity_query_options.sort[field] = (req.query["sort_"+field] === -1) ? -1 : 1;
+                    }
+                });
+            }
+
             next();
         };
 
