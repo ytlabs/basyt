@@ -173,7 +173,8 @@ function Basyt() {
         };
         fs.readdirSync(listenersFolder).forEach(function (file, index) {
             var listenerName = file.toLowerCase().slice(0, -3),
-                listener = require(listenersFolder + file);
+                listener = require(listenersFolder + file),
+                that = this;
             log.info("%s. %s Listener is imported", (index + 1), listenerName);
             _.forOwn(listener, function(setup, channel){
                 if(_.isUndefined(this.listener_setups[setup.source || 'redis'][channel]))
@@ -184,31 +185,28 @@ function Basyt() {
 
             _.forOwn(this.listener_setups.redis, function(setup_list, channel){
                 this.redisClient.subscribe(channel);
-                this.redisClient.onMessage(function(ch, data) {
-                    for(var i = 0; i < setup_list.length; i++) {
-                        if(setup_list[i].eventName = data.eventName) {
-                            if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
-                                setup_list[i].action(data.data, ch);
-                            }
-                        }
-                    }
-                });
             }, this);
 
             _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
                 this.redisClient.psubscribe(channel);
-                this.redisClient.onMessage(function(ch, data) {
-                    for(var i = 0; i < setup_list.length; i++) {
-                        if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
-                            setup_list[i].action(data, ch);
-                        }
-                    }
-                });
             }, this);
 
+            this.redisClient.onMessage(function(channel, data, pattern) {
+                var setup_list = pattern
+                    ? that.listener_setups.redis_pattern[pattern]
+                    : that.listener_setups.redis[channel];
+
+                for(var i = 0; i < setup_list.length; i++) {
+                    if((!setup_list[i].eventName) || (setup_list[i].eventName === data.eventName)) {
+                        if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
+                            setup_list[i].action(data.data, channel);
+                        }
+                    }
+                }
+            });
+
             if (config.basyt.enable_ws !== false) {
-                var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection',
-                    that = this;
+                var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection';
                 this.ws_server.on('ws_start_event', function (socket) {
                     // socket initialization begins
                     socket.basytRedisClient = redis.createClient();
