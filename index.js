@@ -164,7 +164,7 @@ function Basyt() {
 
     //Import listeners
     if (fs.existsSync(listenersFolder)) {
-        var redisClient = redis.createClient();
+        this.redisClient = redis.createClient();
         log.info('Importing Listeners');
         this.listener_setups = {
             redis: {},
@@ -183,8 +183,8 @@ function Basyt() {
 
 
             _.forOwn(this.listener_setups.redis, function(setup_list, channel){
-                redisClient.subscribe(channel);
-                redisClient.onMessage(function(ch, data) {
+                this.redisClient.subscribe(channel);
+                this.redisClient.onMessage(function(ch, data) {
                     for(var i = 0; i < setup_list.length; i++) {
                         if(setup_list[i].eventName = data.eventName) {
                             if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
@@ -193,27 +193,45 @@ function Basyt() {
                         }
                     }
                 });
-            });
+            }, this);
 
             _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
-                redisClient.psubscribe(channel);
-                redisClient.onMessage(function(ch, data) {
+                this.redisClient.psubscribe(channel);
+                this.redisClient.onMessage(function(ch, data) {
                     for(var i = 0; i < setup_list.length; i++) {
                         if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
                             setup_list[i].action(data, ch);
                         }
                     }
                 });
-            });
+            }, this);
 
             if (config.basyt.enable_ws !== false) {
-                this.ws_server.on('authenticated', function (socket) {
+                var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection',
+                    that = this;
+                this.ws_server.on('ws_start_event', function (socket) {
+                    // socket initialization begins
+                    socket.basytRedisClient = redis.createClient();
+                    if(socket.decoded_token) {
+                        socket.basytRedisClient.psubscribe('user:'+socket.decoded_token.id+':*');
+                    }
+                    socket.basytRedisClient.onMessage(function(channel, message) {
+                        socket.emit(message.eventName, message.data);
+                    });
+                    socket.on('disconnect', function(){
+                        socket.basytRedisClient.quit();
+                    });
+                    // socket initialization ends
+
+                    // listener setups
                     _.forOwn(that.listener_setups.socket, function (setup_list, channel) {
                         for(var i = 0; i < setup_list.length; i++) {
+                            if(_.isUndefined(socket.decoded_token) && setup_list[i].require_auth) continue;
                             if (setup_list[i].initialize) setup_list[i].initialize(socket);
                         }
                         socket.on(channel, function(data) {
                             for(var i = 0; i < setup_list.length; i++) {
+                                if(_.isUndefined(socket.decoded_token) && setup_list[i].require_auth) continue;
                                 if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
                                     setup_list[i].action(data, socket);
                                 }
@@ -225,10 +243,7 @@ function Basyt() {
         }, this);
     }
 
-
-
     this.app.use(function (err, req, res, next) {
-        console.error(err);
         return res.status(err.statusCode || 500).json({success: false, err: err.err});
     });
 
