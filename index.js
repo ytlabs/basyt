@@ -164,6 +164,7 @@ function Basyt() {
 
     //Import listeners
     if (fs.existsSync(listenersFolder)) {
+        var that = this;
         this.redisClient = redis.createClient();
         log.info('Importing Listeners');
         this.listener_setups = {
@@ -173,72 +174,70 @@ function Basyt() {
         };
         fs.readdirSync(listenersFolder).forEach(function (file, index) {
             var listenerName = file.toLowerCase().slice(0, -3),
-                listener = require(listenersFolder + file),
-                that = this;
+                listener = require(listenersFolder + file);
             log.info("%s. %s Listener is imported", (index + 1), listenerName);
             _.forOwn(listener, function(setup, channel){
                 if(_.isUndefined(this.listener_setups[setup.source || 'redis'][channel]))
                     this.listener_setups[setup.source || 'redis'][channel] = [];
                 this.listener_setups[setup.source || 'redis'][channel].push(setup);
             }, this);
+        }, this);
 
+        _.forOwn(this.listener_setups.redis, function(setup_list, channel){
+            this.redisClient.subscribe(channel);
+        }, this);
 
-            _.forOwn(this.listener_setups.redis, function(setup_list, channel){
-                this.redisClient.subscribe(channel);
-            }, this);
+        _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
+            this.redisClient.psubscribe(channel);
+        }, this);
 
-            _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
-                this.redisClient.psubscribe(channel);
-            }, this);
+        this.redisClient.onMessage(function(channel, data, pattern) {
+            var setup_list = pattern
+                ? that.listener_setups.redis_pattern[pattern]
+                : that.listener_setups.redis[channel];
 
-            this.redisClient.onMessage(function(channel, data, pattern) {
-                var setup_list = pattern
-                    ? that.listener_setups.redis_pattern[pattern]
-                    : that.listener_setups.redis[channel];
-
-                for(var i = 0; i < setup_list.length; i++) {
-                    if((!setup_list[i].eventName) || (setup_list[i].eventName === data.eventName)) {
-                        if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
-                            setup_list[i].action(data.data, channel);
-                        }
+            for(var i = 0; i < setup_list.length; i++) {
+                if((!setup_list[i].eventName) || (setup_list[i].eventName === data.eventName)) {
+                    if(!setup_list[i].match || _.isMatch(data.data, setup_list[i].match)){
+                        setup_list[i].action(data.data, channel);
                     }
                 }
-            });
+            }
+        });
 
-            if (config.basyt.enable_ws !== false) {
-                var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection';
-                this.ws_server.on('ws_start_event', function (socket) {
-                    // socket initialization begins
-                    socket.basytRedisClient = redis.createClient();
-                    if(socket.decoded_token) {
-                        socket.basytRedisClient.psubscribe('user:'+socket.decoded_token.id+':*');
+        if (config.basyt.enable_ws !== false) {
+            var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection';
+            this.ws_server.on('ws_start_event', function (socket) {
+                // socket initialization begins
+                socket.basytRedisClient = redis.createClient();
+                if(socket.decoded_token) {
+                    socket.basytRedisClient.psubscribe('user:'+socket.decoded_token.id+':*');
+                }
+                socket.basytRedisClient.onMessage(function(channel, message) {
+                    socket.emit(message.eventName, message.data);
+                });
+                socket.on('disconnect', function(){
+                    socket.basytRedisClient.quit();
+                });
+                // socket initialization ends
+
+                // listener setups
+                _.forOwn(that.listener_setups.socket, function (setup_list, channel) {
+                    for(var i = 0; i < setup_list.length; i++) {
+                        if(_.isUndefined(socket.decoded_token) && setup_list[i].require_auth) continue;
+                        if (setup_list[i].initialize) setup_list[i].initialize(socket);
                     }
-                    socket.basytRedisClient.onMessage(function(channel, message) {
-                        socket.emit(message.eventName, message.data);
-                    });
-                    socket.on('disconnect', function(){
-                        socket.basytRedisClient.quit();
-                    });
-                    // socket initialization ends
-
-                    // listener setups
-                    _.forOwn(that.listener_setups.socket, function (setup_list, channel) {
+                    socket.on(channel, function(data) {
                         for(var i = 0; i < setup_list.length; i++) {
                             if(_.isUndefined(socket.decoded_token) && setup_list[i].require_auth) continue;
-                            if (setup_list[i].initialize) setup_list[i].initialize(socket);
-                        }
-                        socket.on(channel, function(data) {
-                            for(var i = 0; i < setup_list.length; i++) {
-                                if(_.isUndefined(socket.decoded_token) && setup_list[i].require_auth) continue;
-                                if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
-                                    setup_list[i].action(data, socket);
-                                }
+                            if(!setup_list[i].match || _.isMatch(data, setup_list[i].match)){
+                                setup_list[i].action(data, socket);
                             }
-                        })
-                    });
+                        }
+                    })
                 });
-            }
-        }, this);
+            });
+        }
     }
 
     this.app.use(function (err, req, res, next) {
