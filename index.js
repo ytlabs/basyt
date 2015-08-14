@@ -165,7 +165,7 @@ function Basyt() {
     //Import listeners
     if (fs.existsSync(listenersFolder)) {
         var that = this;
-        this.redisClient = redis.createClient();
+        this.messageClient = redis.createClient();
         log.info('Importing Listeners');
         this.listener_setups = {
             redis: {},
@@ -184,14 +184,14 @@ function Basyt() {
         }, this);
 
         _.forOwn(this.listener_setups.redis, function(setup_list, channel){
-            this.redisClient.subscribe(channel);
+            this.messageClient.subscribe(channel);
         }, this);
 
         _.forOwn(this.listener_setups.redis_pattern, function(setup_list, channel){
-            this.redisClient.psubscribe(channel);
+            this.messageClient.psubscribe(channel);
         }, this);
 
-        this.redisClient.onMessage(function(channel, data, pattern) {
+        this.messageClient.onMessage(function(channel, data, pattern) {
             var setup_list = pattern
                 ? that.listener_setups.redis_pattern[pattern]
                 : that.listener_setups.redis[channel];
@@ -207,17 +207,17 @@ function Basyt() {
 
         if (config.basyt.enable_ws !== false) {
             var ws_start_event = config.basyt.enable_auth ? 'authenticated' : 'connection';
-            this.ws_server.on('ws_start_event', function (socket) {
+            this.ws_server.on(ws_start_event, function (socket) {
                 // socket initialization begins
-                socket.basytRedisClient = redis.createClient();
+                socket.basytMessageClient = redis.createClient();
                 if(socket.decoded_token) {
-                    socket.basytRedisClient.psubscribe('user:'+socket.decoded_token.id+':*');
+                    socket.basytMessageClient.psubscribe('user:'+socket.decoded_token.id+':*');
                 }
-                socket.basytRedisClient.onMessage(function(channel, message) {
+                socket.basytMessageClient.onMessage(function(channel, message) {
                     socket.emit(message.eventName, message.data);
                 });
                 socket.on('disconnect', function(){
-                    socket.basytRedisClient.quit();
+                    socket.basytMessageClient.quit();
                 });
                 // socket initialization ends
 
